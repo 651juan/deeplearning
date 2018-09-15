@@ -17,7 +17,7 @@ import cifar10_utils
 DNN_HIDDEN_UNITS_DEFAULT = '100'
 LEARNING_RATE_DEFAULT = 2e-3
 MAX_STEPS_DEFAULT = 1500
-BATCH_SIZE_DEFAULT = 200
+BATCH_SIZE_DEFAULT = 100
 EVAL_FREQ_DEFAULT = 100
 
 # Directory in which cifar data is saved
@@ -43,7 +43,7 @@ def accuracy(predictions, targets):
   Implement accuracy computation.
   """
 
-  accuracy = np.mean(np.sum(np.all((predictions ==targets), axis=1)))
+  accuracy = np.mean(np.sum(np.all((predictions == targets), axis=1)))
 
   return accuracy
 
@@ -71,26 +71,39 @@ def train():
   cifar10 = cifar10_utils.read_data_sets(DATA_DIR_DEFAULT)
   # Create MLP Instance
   trainDataSet = cifar10['train']
-  size_of_images =  cifar10['train'].images[0].shape[0] *  cifar10['train'].images[0].shape[1] * cifar10['train'].images[0].shape[2]
+  testDataSet = cifar10['test']
+  size_of_images =  cifar10['train'].images[0].shape[0] * cifar10['train'].images[0].shape[1] * cifar10['train'].images[0].shape[2]
   mlp = MLP(size_of_images, dnn_hidden_units, np.shape(cifar10['test'].labels)[1])
   loss = CrossEntropyModule()
-  sm = SoftMaxModule()
-  params = []
   for i in range(MAX_STEPS_DEFAULT):
     # np.random.shuffle(cifar10['train'])
-    batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
-    for index in range(len(batch)):
+    accuracies_train = []
+    accuracies_test = []
+    loss_train = []
+    flag = trainDataSet.epochs_completed
+    while flag == trainDataSet.epochs_completed:
+      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
       x = batch[0]
       x = x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))
       y = batch[1]
-      params = mlp.forward(x)
-      prob = sm.forward(params)
-      predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
-      print(accuracy(predictions, y))
 
-      params_grad = loss.forward(prob, y)
-      # params = params - LEARNING_RATE_DEFAULT * params_grad
-      mlp.backward(params)
+      prob = mlp.forward(x)
+      predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
+      accuracies_train.append(accuracy(predictions, y))
+
+      current_loss = loss.forward(prob, y)
+      loss_train.append(current_loss)
+
+      # print(current_loss)
+      out_loss_back = loss.backward(prob,y)
+      mlp.backward(out_loss_back)
+      # prob = mlp.forward(testDataSet.images)
+      # predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
+      # accuracies_test.append(accuracy(predictions, testDataSet.labels))
+    print(np.mean(accuracies_train))
+    print(np.mean(loss_train))
+
+
 
 
 def print_flags():

@@ -6,13 +6,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import torch
+import torch.nn as nn
+import torchvision
+import torchvision.transforms as transforms
+
 class MLP(nn.Module):
   """
   This class implements a Multi-layer Perceptron in PyTorch.
   It handles the different layers and parameters of the model.
   Once initialized an MLP object can perform forward.
   """
-
   def __init__(self, n_inputs, n_hidden, n_classes):
     """
     Initializes MLP object. 
@@ -30,14 +34,20 @@ class MLP(nn.Module):
     TODO:
     Implement initialization of the network.
     """
+    super(MLP, self).__init__()
+    self.layers = nn.ModuleList()
+    previous_size = n_inputs
+    for layer in range(len(n_hidden)):
+        linear = nn.Linear(previous_size, n_hidden[layer])
+        relu = nn.ReLU()
+        previous_size = n_hidden[layer]
+        self.layers.append(linear)
+        self.layers.append(relu)
 
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    linear = nn.Linear(previous_size, n_classes)
+    self.layers.append(linear)
+    softmax = nn.Softmax()
+    self.layers.append(softmax)
 
   def forward(self, x):
     """
@@ -53,12 +63,7 @@ class MLP(nn.Module):
     Implement forward pass of the network.
     """
 
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
-
+    out = x
+    for i, l in enumerate(self.layers):
+        out = self.layers[i](out)
     return out

@@ -11,11 +11,13 @@ import numpy as np
 import os
 from mlp_pytorch import MLP
 import cifar10_utils
+import torch
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Default constants
 DNN_HIDDEN_UNITS_DEFAULT = '100'
 LEARNING_RATE_DEFAULT = 2e-3
-MAX_STEPS_DEFAULT = 1500
+MAX_STEPS_DEFAULT = 30
 BATCH_SIZE_DEFAULT = 200
 EVAL_FREQ_DEFAULT = 100
 
@@ -41,14 +43,7 @@ def accuracy(predictions, targets):
   TODO:
   Implement accuracy computation.
   """
-
-  ########################
-  # PUT YOUR CODE HERE  #
-  #######################
-  raise NotImplementedError
-  ########################
-  # END OF YOUR CODE    #
-  #######################
+  accuracy = np.sum(np.all((predictions == targets), axis=1)) / predictions.shape[0]
 
   return accuracy
 
@@ -72,13 +67,57 @@ def train():
   else:
     dnn_hidden_units = []
 
-  ########################
-  # PUT YOUR CODE HERE  #
-  #######################
-  raise NotImplementedError
-  ########################
-  # END OF YOUR CODE    #
-  #######################
+  # Get Images
+  cifar10 = cifar10_utils.read_data_sets(DATA_DIR_DEFAULT)
+  # Create MLP Instance
+  trainDataSet = cifar10['train']
+  testDataSet = cifar10['test']
+
+  size_of_images =  cifar10['train'].images[0].shape[0] * cifar10['train'].images[0].shape[1] * cifar10['train'].images[0].shape[2]
+
+  mlp = MLP(size_of_images, dnn_hidden_units, np.shape(cifar10['test'].labels)[1]).to(device)
+  criterion = torch.nn.CrossEntropyLoss()
+  optim = torch.optim.SGD(mlp.parameters(), lr=FLAGS.learning_rate)
+
+  for i in range(MAX_STEPS_DEFAULT):
+    # np.random.shuffle(cifar10['train'])
+    accuracies_train = []
+    flag = trainDataSet.epochs_completed
+    while flag == trainDataSet.epochs_completed:
+      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+      x = batch[0]
+      x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))).to(device)
+      y_numpy = batch[1]
+      y = torch.from_numpy(batch[1]).to(device)
+      optim.zero_grad()
+      prob = mlp(x)
+      prob_num = prob.cpu().clone().detach().numpy()
+      predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
+      accuracies_train.append(accuracy(predictions, y_numpy))
+
+      current_loss = criterion(prob,  torch.max(y, 1)[1])
+      current_loss.backward()
+      optim.step()
+      # print(current_loss)
+      # mlp.backward(out_loss_back)
+      # prob = mlp.forward(testDataSet.images)
+      # predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
+      # accuracies_test.append(accuracy(predictions, testDataSet.labels))
+    print(np.mean(accuracies_train))
+    # print(np.mean(loss_train))
+  accuracies_test = []
+  with torch.no_grad():
+    flag = trainDataSet.epochs_completed
+    while flag == trainDataSet.epochs_completed:
+      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+      x = batch[0]
+      x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))).to(device)
+      y_numpy = batch[1]
+      outputs = mlp(x)
+      outputs_num = outputs.cpu().detach().numpy()
+      predictions = (outputs_num == outputs_num.max(axis=1)[:, None]).astype(int)
+      accuracies_test.append(accuracy(predictions, y_numpy))
+    print("TEST: ", np.mean(accuracies_test))
 
 def print_flags():
   """

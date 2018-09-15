@@ -44,6 +44,8 @@ class MLP(object):
 
     linear = LinearModule(previous_size, n_classes)
     self.layers.append(linear)
+    softmax = SoftMaxModule()
+    self.layers.append(softmax)
 
   def forward(self, x):
     """
@@ -76,4 +78,7 @@ class MLP(object):
     dx = dout
     for layer in reversed(self.layers):
         dx = layer.backward(dx)
+        if (isinstance(layer, LinearModule)):
+            layer.params['weight'] -= layer.LEARNING_RATE * layer.grads['weight']
+            layer.params['bias'] -= layer.LEARNING_RATE * layer.grads['bias']
     return

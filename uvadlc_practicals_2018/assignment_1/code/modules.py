@@ -62,8 +62,9 @@ class LinearModule(object):
     """
     dx = dout.dot(self.params['weight'].T)
     self.grads['weight'] = (self.inter['previousX'].T).dot(dout)
-    self.grads['bias'] = self.inter['previousX']
-    # self.grads['weight'] = self.grads['weight'] - self.LEARNING_RATE * dx
+    self.grads['bias'] = np.sum(dout, axis=0)
+    # self.params['weight'] -= self.LEARNING_RATE * self.grads['weight']
+    # self.params['bias'] -= self.LEARNING_RATE * self.grads['bias']
     return dx
 
 class ReLUModule(object):
@@ -150,7 +151,6 @@ class SoftMaxModule(object):
     jac = np.diagflat(s) - np.dot(s, s.T)
     shape = np.shape(self.inter['probs'])
     return dout.reshape(1,-1).dot(jac).reshape(shape[0], shape[1])
-
 class CrossEntropyModule(object):
   """
   Cross entropy loss module.
@@ -171,6 +171,12 @@ class CrossEntropyModule(object):
     true_class = np.where(y==1)
     out = - np.sum(np.log(x[true_class])) / y.shape[0]
     # out = -np.log(x, np.argmax(y))
+    # out = -np.sum(y*np.log(x))
+    # loss = np.sum(-np.log(x[true_class]))
+
+    # lse = self._log_sum_exp(logits)
+    # log_prob = logits - lse
+    # return - np.einsum('ij,ij->', labels, log_prob), np.exp(log_prob)
 
     return out
 
@@ -187,13 +193,12 @@ class CrossEntropyModule(object):
     TODO:
     Implement backward pass of the module.
     """
-    dx = np.zeros((y.shape))
-
-    true_class = np.where(y == 1)
-
-    losses = (-1 / x[true_class]) / y.shape[0]
-    for i, j in enumerate(true_class[1]):
-      dx[i, j] = losses[i]
-    # dx = -(y/x).sum()
-
-    return dx
+    # dx = np.zeros((y.shape))
+    # true_class = np.where(y == 1)
+    # losses = (-1/(x[true_class]*y.shape[0]))
+    # for i, j in enumerate(true_class[1]):
+    #   dx[i, j] = losses[i]
+    aa = -y/(x*y.shape[0]*y)
+    bb = np.isnan(aa)
+    aa[bb] = 0
+    return aa
