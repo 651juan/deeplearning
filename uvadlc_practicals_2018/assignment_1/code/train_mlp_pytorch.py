@@ -17,7 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Default constants
 DNN_HIDDEN_UNITS_DEFAULT = '100'
 LEARNING_RATE_DEFAULT = 2e-3
-MAX_STEPS_DEFAULT = 30
+MAX_STEPS_DEFAULT = 1500
 BATCH_SIZE_DEFAULT = 200
 EVAL_FREQ_DEFAULT = 100
 
@@ -98,13 +98,7 @@ def train():
       current_loss = criterion(prob,  torch.max(y, 1)[1])
       current_loss.backward()
       optim.step()
-      # print(current_loss)
-      # mlp.backward(out_loss_back)
-      # prob = mlp.forward(testDataSet.images)
-      # predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
-      # accuracies_test.append(accuracy(predictions, testDataSet.labels))
     print(np.mean(accuracies_train))
-    # print(np.mean(loss_train))
   accuracies_test = []
   with torch.no_grad():
     flag = trainDataSet.epochs_completed

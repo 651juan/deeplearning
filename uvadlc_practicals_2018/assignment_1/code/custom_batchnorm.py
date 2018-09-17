@@ -33,14 +33,10 @@ class CustomBatchNormAutograd(nn.Module):
       Initialize parameters gamma and beta via nn.Parameter
     """
     super(CustomBatchNormAutograd, self).__init__()
-
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    self.n_neurons = n_neurons
+    self.eps = eps
+    self.beta = nn.Parameter(torch.ones(n_neurons))
+    self.gamma = nn.Parameter(torch.zeros(n_neurons))
 
   def forward(self, input):
     """
@@ -56,15 +52,13 @@ class CustomBatchNormAutograd(nn.Module):
       Implement batch normalization forward pass as given in the assignment.
       For the case that you make use of torch.var be aware that the flag unbiased=False should be set.
     """
+    if (input.size()[1] != self.n_neurons):
+      raise ValueError("Dimensions mismatch")
 
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
-
+    mu = torch.mean(input, 0)
+    theta = torch.mean((input - mu) ** 2, 0)
+    norm = (input - mu) * 1.0 / torch.sqrt(theta + self.eps)
+    out = (self.gamma * norm) + self.beta
     return out
 
 

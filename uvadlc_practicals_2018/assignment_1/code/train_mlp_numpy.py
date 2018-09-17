@@ -43,7 +43,7 @@ def accuracy(predictions, targets):
   Implement accuracy computation.
   """
 
-  accuracy = np.mean(np.sum(np.all((predictions == targets), axis=1)))
+  accuracy = np.sum(np.all((predictions == targets), axis=1)) / predictions.shape[0]
 
   return accuracy
 
@@ -90,16 +90,11 @@ def train():
       prob = mlp.forward(x)
       predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
       accuracies_train.append(accuracy(predictions, y))
-
       current_loss = loss.forward(prob, y)
       loss_train.append(current_loss)
 
-      # print(current_loss)
       out_loss_back = loss.backward(prob,y)
       mlp.backward(out_loss_back)
-      # prob = mlp.forward(testDataSet.images)
-      # predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
-      # accuracies_test.append(accuracy(predictions, testDataSet.labels))
     print(np.mean(accuracies_train))
     print(np.mean(loss_train))
 

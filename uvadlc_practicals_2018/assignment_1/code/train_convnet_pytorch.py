@@ -11,6 +11,8 @@ import numpy as np
 import os
 from convnet_pytorch import ConvNet
 import cifar10_utils
+import torch
+from tensorboardX import SummaryWriter
 
 # Default constants
 LEARNING_RATE_DEFAULT = 1e-4
@@ -18,6 +20,8 @@ BATCH_SIZE_DEFAULT = 32
 MAX_STEPS_DEFAULT = 5000
 EVAL_FREQ_DEFAULT = 500
 OPTIMIZER_DEFAULT = 'ADAM'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+writer = SummaryWriter('runs')
 
 # Directory in which cifar data is saved
 DATA_DIR_DEFAULT = './cifar10/cifar-10-batches-py'
@@ -42,13 +46,7 @@ def accuracy(predictions, targets):
   Implement accuracy computation.
   """
 
-  ########################
-  # PUT YOUR CODE HERE  #
-  #######################
-  raise NotImplementedError
-  ########################
-  # END OF YOUR CODE    #
-  #######################
+  accuracy = np.sum(np.all((predictions == targets), axis=1)) / predictions.shape[0]
 
   return accuracy
 
@@ -64,13 +62,77 @@ def train():
   # Set the random seeds for reproducibility
   np.random.seed(42)
 
-  ########################
-  # PUT YOUR CODE HERE  #
-  #######################
-  raise NotImplementedError
-  ########################
-  # END OF YOUR CODE    #
-  #######################
+  # Get Images
+  cifar10 = cifar10_utils.read_data_sets(DATA_DIR_DEFAULT)
+  # Create MLP Instance
+  trainDataSet = cifar10['train']
+  testDataSet = cifar10['test']
+
+  mlp = ConvNet(cifar10['train'].images[0].shape[2], np.shape(cifar10['test'].labels)[1]).to(device)
+  loss = torch.nn.CrossEntropyLoss()
+  optimizer = torch.optim.Adam(mlp.parameters(), lr=FLAGS.learning_rate)
+
+  for i in range(MAX_STEPS_DEFAULT):
+    # np.random.shuffle(cifar10['train'])
+    accuracies_train = []
+    loss_train = []
+    flag = trainDataSet.epochs_completed
+    counter = 0
+    test_dataset(mlp, testDataSet, loss, i)
+    while flag == trainDataSet.epochs_completed:
+      counter = counter + 1
+      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+      x = torch.from_numpy(batch[0]).to(device)
+      # x = torch.from_numpy(x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])).to(device)
+      y_numpy = batch[1]
+      y = torch.from_numpy(batch[1]).to(device)
+      optimizer.zero_grad()
+      prob = mlp(x)
+      prob_num = prob.cpu().clone().detach().numpy()
+      predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
+      current_accuracy = accuracy(predictions, y_numpy)
+      accuracies_train.append(current_accuracy)
+
+      current_loss = loss(prob, torch.max(y, 1)[1])
+      current_loss.backward()
+      optimizer.step()
+      niter = i * BATCH_SIZE_DEFAULT + counter
+      current_loss = current_loss.cpu().detach().numpy()
+      loss_train.append(current_loss)
+      writer.add_scalar('Train/Loss', current_loss, niter)
+      writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    writer.add_scalar('Train/LossIteration', np.mean(loss_train))
+    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train))
+
+    print(np.mean(accuracies_train))
+
+
+def test_dataset(mlp, testDataSet, loss, i):
+    accuracies_test = []
+    loss_test = []
+    with torch.no_grad():
+        flag = testDataSet.epochs_completed
+        counter = 0
+        while flag == testDataSet.epochs_completed:
+            counter = counter + 1
+            batch = testDataSet.next_batch(BATCH_SIZE_DEFAULT)
+            x = torch.from_numpy(batch[0]).to(device)
+            # x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1] * x.shape[2] * x.shape[3]))).to(device)
+            y_numpy = batch[1]
+            y = torch.from_numpy(batch[1]).to(device)
+            outputs = mlp(x)
+            outputs_num = outputs.cpu().detach().numpy()
+            predictions = (outputs_num == outputs_num.max(axis=1)[:, None]).astype(int)
+            current_accuracy = accuracy(predictions, y_numpy)
+            accuracies_test.append(current_accuracy)
+            current_loss = loss(outputs, torch.max(y, 1)[1])
+            current_loss = current_loss.cpu().detach().numpy()
+            loss_test.append(current_loss)
+            niter = i * BATCH_SIZE_DEFAULT + counter
+            writer.add_scalar('Test/Loss', current_loss, niter)
+            writer.add_scalar('Test/Accuracy', current_accuracy, niter)
+        writer.add_scalar('Test/LossIteration', np.mean(loss_test))
+        writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test))
 
 def print_flags():
   """
