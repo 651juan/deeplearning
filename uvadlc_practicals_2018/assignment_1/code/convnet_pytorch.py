@@ -77,7 +77,7 @@ class ConvNet(nn.Module):
         Implement forward pass of the network.
         """
 
-        out = x
+        out = torch.autograd.Variable(x)
         for i, l in enumerate(self.layers):
             if isinstance(self.layers[i], nn.Linear):
                 out = out.squeeze()
