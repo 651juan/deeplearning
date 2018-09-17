@@ -71,14 +71,13 @@ def train():
   mlp = ConvNet(cifar10['train'].images[0].shape[2], np.shape(cifar10['test'].labels)[1]).to(device)
   loss = torch.nn.CrossEntropyLoss()
   optimizer = torch.optim.Adam(mlp.parameters(), lr=FLAGS.learning_rate)
-
+  aggregate_counter = 0
   for i in range(MAX_STEPS_DEFAULT):
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []
     loss_train = []
     flag = trainDataSet.epochs_completed
     counter = 0
-    test_dataset(mlp, testDataSet, loss, i)
     while flag == trainDataSet.epochs_completed:
       counter = counter + 1
       batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
@@ -96,14 +95,15 @@ def train():
       current_loss = loss(prob, torch.max(y, 1)[1])
       current_loss.backward()
       optimizer.step()
-      niter = i * BATCH_SIZE_DEFAULT + counter
+      niter = aggregate_counter + counter
       current_loss = current_loss.cpu().detach().numpy()
       loss_train.append(current_loss)
       writer.add_scalar('Train/Loss', current_loss, niter)
       writer.add_scalar('Train/Accuracy', current_accuracy, niter)
-    writer.add_scalar('Train/LossIteration', np.mean(loss_train))
-    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train))
-
+    aggregate_counter += counter
+    writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
+    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
+    test_dataset(mlp, testDataSet, loss, aggregate_counter)
     print(np.mean(accuracies_train))
 
 
@@ -128,11 +128,11 @@ def test_dataset(mlp, testDataSet, loss, i):
             current_loss = loss(outputs, torch.max(y, 1)[1])
             current_loss = current_loss.cpu().detach().numpy()
             loss_test.append(current_loss)
-            niter = i * BATCH_SIZE_DEFAULT + counter
+            niter = i + counter
             writer.add_scalar('Test/Loss', current_loss, niter)
             writer.add_scalar('Test/Accuracy', current_accuracy, niter)
-        writer.add_scalar('Test/LossIteration', np.mean(loss_test))
-        writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test))
+        writer.add_scalar('Test/LossIteration', np.mean(loss_test), i)
+        writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test), i)
 
 def print_flags():
   """
