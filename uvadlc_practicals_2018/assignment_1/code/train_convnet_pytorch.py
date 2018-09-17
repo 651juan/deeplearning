@@ -21,7 +21,7 @@ MAX_STEPS_DEFAULT = 5000
 EVAL_FREQ_DEFAULT = 500
 OPTIMIZER_DEFAULT = 'ADAM'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-writer = SummaryWriter('runs')
+writer = SummaryWriter('runs_convnet')
 
 # Directory in which cifar data is saved
 DATA_DIR_DEFAULT = './cifar10/cifar-10-batches-py'
@@ -72,7 +72,7 @@ def train():
   loss = torch.nn.CrossEntropyLoss()
   optimizer = torch.optim.Adam(mlp.parameters(), lr=FLAGS.learning_rate)
   aggregate_counter = 0
-  for i in range(MAX_STEPS_DEFAULT):
+  for i in range(FLAGS.max_steps):
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []
     loss_train = []
@@ -80,7 +80,7 @@ def train():
     counter = 0
     while flag == trainDataSet.epochs_completed:
       counter = counter + 1
-      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+      batch = trainDataSet.next_batch(FLAGS.batch_size)
       x = torch.from_numpy(batch[0]).to(device)
       # x = torch.from_numpy(x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])).to(device)
       y_numpy = batch[1]
@@ -100,14 +100,15 @@ def train():
       loss_train.append(current_loss)
       writer.add_scalar('Train/Loss', current_loss, niter)
       writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    if i % FLAGS.eval_freq == 0:
+        test_dataset(mlp, testDataSet, loss, aggregate_counter, i)
     aggregate_counter += counter
     writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
     writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
-    test_dataset(mlp, testDataSet, loss, aggregate_counter)
     print(np.mean(accuracies_train))
 
 
-def test_dataset(mlp, testDataSet, loss, i):
+def test_dataset(mlp, testDataSet, loss, agg, i):
     accuracies_test = []
     loss_test = []
     with torch.no_grad():
@@ -115,7 +116,7 @@ def test_dataset(mlp, testDataSet, loss, i):
         counter = 0
         while flag == testDataSet.epochs_completed:
             counter = counter + 1
-            batch = testDataSet.next_batch(BATCH_SIZE_DEFAULT)
+            batch = testDataSet.next_batch(FLAGS.batch_size)
             x = torch.from_numpy(batch[0]).to(device)
             # x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1] * x.shape[2] * x.shape[3]))).to(device)
             y_numpy = batch[1]
@@ -128,7 +129,7 @@ def test_dataset(mlp, testDataSet, loss, i):
             current_loss = loss(outputs, torch.max(y, 1)[1])
             current_loss = current_loss.cpu().detach().numpy()
             loss_test.append(current_loss)
-            niter = i + counter
+            niter = agg + counter
             writer.add_scalar('Test/Loss', current_loss, niter)
             writer.add_scalar('Test/Accuracy', current_accuracy, niter)
         writer.add_scalar('Test/LossIteration', np.mean(loss_test), i)

@@ -12,7 +12,9 @@ import os
 from mlp_pytorch import MLP
 import cifar10_utils
 import torch
+from tensorboardX import SummaryWriter
 
+writer = SummaryWriter('runs_pytorch')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Default constants
 DNN_HIDDEN_UNITS_DEFAULT = '100'
@@ -76,15 +78,19 @@ def train():
   size_of_images =  cifar10['train'].images[0].shape[0] * cifar10['train'].images[0].shape[1] * cifar10['train'].images[0].shape[2]
 
   mlp = MLP(size_of_images, dnn_hidden_units, np.shape(cifar10['test'].labels)[1]).to(device)
-  criterion = torch.nn.CrossEntropyLoss()
+  loss = torch.nn.CrossEntropyLoss()
   optim = torch.optim.SGD(mlp.parameters(), lr=FLAGS.learning_rate)
+  aggregate_counter = 0
 
-  for i in range(MAX_STEPS_DEFAULT):
+  for i in range(FLAGS.max_steps):
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []
+    loss_train = []
     flag = trainDataSet.epochs_completed
+    counter = 0
     while flag == trainDataSet.epochs_completed:
-      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+      counter = counter + 1
+      batch = trainDataSet.next_batch(FLAGS.batch_size)
       x = batch[0]
       x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))).to(device)
       y_numpy = batch[1]
@@ -93,25 +99,52 @@ def train():
       prob = mlp(x)
       prob_num = prob.cpu().clone().detach().numpy()
       predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
-      accuracies_train.append(accuracy(predictions, y_numpy))
+      current_accuracy = accuracy(predictions, y_numpy)
+      accuracies_train.append(current_accuracy)
 
-      current_loss = criterion(prob,  torch.max(y, 1)[1])
+      current_loss = loss(prob,  torch.max(y, 1)[1])
       current_loss.backward()
       optim.step()
+      niter = aggregate_counter + counter
+      current_loss = current_loss.cpu().detach().numpy()
+      loss_train.append(current_loss)
+      writer.add_scalar('Train/Loss', current_loss, niter)
+      writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    if i % FLAGS.eval_freq == 0:
+      test_dataset(mlp, testDataSet, loss, aggregate_counter, i)
+    aggregate_counter += counter
+    writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
+    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
+    # test_dataset(mlp, testDataSet, loss, aggregate_counter)
     print(np.mean(accuracies_train))
+
+def test_dataset(mlp, testDataSet, loss, agg, i):
   accuracies_test = []
+  loss_test = []
   with torch.no_grad():
-    flag = trainDataSet.epochs_completed
-    while flag == trainDataSet.epochs_completed:
-      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+    flag = testDataSet.epochs_completed
+    counter = 0
+    while flag == testDataSet.epochs_completed:
+      counter = counter + 1
+      batch = testDataSet.next_batch(FLAGS.batch_size)
       x = batch[0]
       x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))).to(device)
       y_numpy = batch[1]
+      y = torch.from_numpy(batch[1]).to(device)
       outputs = mlp(x)
       outputs_num = outputs.cpu().detach().numpy()
       predictions = (outputs_num == outputs_num.max(axis=1)[:, None]).astype(int)
-      accuracies_test.append(accuracy(predictions, y_numpy))
-    print("TEST: ", np.mean(accuracies_test))
+      current_accuracy = accuracy(predictions, y_numpy)
+      accuracies_test.append(current_accuracy)
+      current_loss = loss(outputs, torch.max(y, 1)[1])
+      current_loss = current_loss.cpu().detach().numpy()
+      loss_test.append(current_loss)
+      niter = agg + counter
+      writer.add_scalar('Test/Loss', current_loss, niter)
+      writer.add_scalar('Test/Accuracy', current_accuracy, niter)
+    writer.add_scalar('Test/LossIteration', np.mean(loss_test), i)
+    writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test), i)
+
 
 def print_flags():
   """
