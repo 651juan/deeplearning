@@ -129,9 +129,9 @@ class SoftMaxModule(object):
     Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.                                                           #
     """
     self.inter['previousX'] = x
-    b = x.max()
+    b = x.max(axis=0,keepdims=True)
     y = np.exp(x - b)
-    out = y / y.sum()
+    out = y / y.sum(axis=0,keepdims=True)
     self.inter['probs'] = out
     return out
 
