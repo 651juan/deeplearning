@@ -25,7 +25,7 @@ dtype = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 writer = SummaryWriter('runs_convnet')
 
 # Directory in which cifar data is saved
-DATA_DIR_DEFAULT = './cifar10/cifar-10-batches-py'
+DATA_DIR_DEFAULT = './deeplearning/uvadlc_practicals_2018/assignment1/code/cifar10/cifar-10-batches-py'
 
 FLAGS = None
 
