@@ -88,7 +88,7 @@ def train():
       y = torch.from_numpy(batch[1]).cuda()
       optimizer.zero_grad()
       prob = mlp(x)
-      prob_num = prob.cpu().clone().detach().numpy()
+      prob_num = prob.cpu().clone().detach().data.numpy()
       predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
       current_accuracy = accuracy(predictions, y_numpy)
       accuracies_train.append(current_accuracy)
@@ -97,7 +97,7 @@ def train():
       current_loss.backward()
       optimizer.step()
       niter = aggregate_counter + counter
-      current_loss = current_loss.cpu().detach().numpy()
+      current_loss = current_loss.cpu().detach().data.numpy()
       loss_train.append(current_loss)
       writer.add_scalar('Train/Loss', current_loss, niter)
       writer.add_scalar('Train/Accuracy', current_accuracy, niter)
@@ -118,17 +118,17 @@ def test_dataset(mlp, testDataSet, loss, agg, i):
         while flag == testDataSet.epochs_completed:
             counter = counter + 1
             batch = testDataSet.next_batch(FLAGS.batch_size)
-            x = torch.from_numpy(batch[0]).to(device)
+            x = torch.from_numpy(batch[0]).cuda()
             # x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1] * x.shape[2] * x.shape[3]))).to(device)
             y_numpy = batch[1]
-            y = torch.from_numpy(batch[1]).to(device)
+            y = torch.from_numpy(batch[1]).cuda()
             outputs = mlp(x)
-            outputs_num = outputs.cpu().detach().numpy()
+            outputs_num = outputs.cpu().detach().data.numpy()
             predictions = (outputs_num == outputs_num.max(axis=1)[:, None]).astype(int)
             current_accuracy = accuracy(predictions, y_numpy)
             accuracies_test.append(current_accuracy)
             current_loss = loss(outputs, torch.max(y, 1)[1])
-            current_loss = current_loss.cpu().detach().numpy()
+            current_loss = current_loss.cpu().detach().data.numpy()
             loss_test.append(current_loss)
             niter = agg + counter
             writer.add_scalar('Test/Loss', current_loss, niter)
