@@ -20,7 +20,8 @@ BATCH_SIZE_DEFAULT = 32
 MAX_STEPS_DEFAULT = 5000
 EVAL_FREQ_DEFAULT = 500
 OPTIMIZER_DEFAULT = 'ADAM'
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+use_cuda = torch.cuda.is_available()
+dtype = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 writer = SummaryWriter('runs_convnet')
 
 # Directory in which cifar data is saved
@@ -68,7 +69,7 @@ def train():
   trainDataSet = cifar10['train']
   testDataSet = cifar10['test']
 
-  mlp = ConvNet(cifar10['train'].images[0].shape[2], np.shape(cifar10['test'].labels)[1]).to(device)
+  mlp = ConvNet(cifar10['train'].images[0].shape[2], np.shape(cifar10['test'].labels)[1]).cuda()
   loss = torch.nn.CrossEntropyLoss()
   optimizer = torch.optim.Adam(mlp.parameters(), lr=FLAGS.learning_rate)
   aggregate_counter = 0
@@ -81,10 +82,10 @@ def train():
     while flag == trainDataSet.epochs_completed:
       counter = counter + 1
       batch = trainDataSet.next_batch(FLAGS.batch_size)
-      x = torch.from_numpy(batch[0]).to(device)
+      x = torch.from_numpy(batch[0]).cuda()
       # x = torch.from_numpy(x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])).to(device)
       y_numpy = batch[1]
-      y = torch.from_numpy(batch[1]).to(device)
+      y = torch.from_numpy(batch[1]).cuda()
       optimizer.zero_grad()
       prob = mlp(x)
       prob_num = prob.cpu().clone().detach().numpy()
