@@ -111,7 +111,7 @@ def train():
     print(np.mean(accuracies_train))
     print(np.mean(loss_train))
 
-def test_dataset(mlp, testDataSet, loss, agg, i):
+def test_dataset(mlp, testDataSet, loss, i):
   accuracies_test = []
   loss_test = []
   flag = testDataSet.epochs_completed
@@ -128,9 +128,6 @@ def test_dataset(mlp, testDataSet, loss, agg, i):
     accuracies_test.append(current_accuracy)
     current_loss = loss.forward(prob, y)
     loss_test.append(current_loss)
-    niter = agg + counter
-    writer.add_scalar('Test/Loss', current_loss, niter)
-    writer.add_scalar('Test/Accuracy', current_accuracy, niter)
   writer.add_scalar('Test/LossIteration', np.mean(loss_test), i)
   writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test), i)
 

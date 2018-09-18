@@ -100,9 +100,10 @@ def train():
     writer.add_scalar('Train/Loss', current_loss, niter)
     writer.add_scalar('Train/Accuracy', current_accuracy, niter)
     if i % FLAGS.eval_freq == 0:
-        test_dataset(mlp, testDataSet, loss, aggregate_counter, i)
+        test_dataset(mlp, testDataSet, loss, i)
     aggregate_counter += counter
     print("ITERATION FINISHED", i, " ", np.mean(accuracies_train))
+  test_dataset(mlp, testDataSet, loss, FLAGS.max_steps +1)
 
 
 def test_dataset(mlp, testDataSet, loss, i):
