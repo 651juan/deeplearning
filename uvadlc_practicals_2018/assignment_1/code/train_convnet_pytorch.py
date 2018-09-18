@@ -106,7 +106,7 @@ def train():
     aggregate_counter += counter
     writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
     writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
-    print(np.mean(accuracies_train))
+    print("ITERATION FINISHED", i, " ", np.mean(accuracies_train))
 
 
 def test_dataset(mlp, testDataSet, loss, agg, i):
