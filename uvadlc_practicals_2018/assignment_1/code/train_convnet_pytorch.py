@@ -105,7 +105,7 @@ def train():
     print("ITERATION FINISHED", i, " ", np.mean(accuracies_train))
 
 
-def test_dataset(mlp, testDataSet, loss, agg, i):
+def test_dataset(mlp, testDataSet, loss, i):
     accuracies_test = []
     loss_test = []
     with torch.no_grad():
@@ -126,9 +126,6 @@ def test_dataset(mlp, testDataSet, loss, agg, i):
             current_loss = loss(outputs, torch.max(y, 1)[1])
             current_loss = current_loss.cpu().detach().numpy()
             loss_test.append(current_loss)
-            niter = agg + counter
-            writer.add_scalar('Test/Loss', current_loss, niter)
-            writer.add_scalar('Test/Accuracy', current_accuracy, niter)
         writer.add_scalar('Test/LossIteration', np.mean(loss_test), i)
         writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test), i)
 

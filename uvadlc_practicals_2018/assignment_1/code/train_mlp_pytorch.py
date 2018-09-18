@@ -88,37 +88,35 @@ def train():
     loss_train = []
     flag = trainDataSet.epochs_completed
     counter = 0
-    while flag == trainDataSet.epochs_completed:
-      counter = counter + 1
-      batch = trainDataSet.next_batch(FLAGS.batch_size)
-      x = batch[0]
-      x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))).to(device)
-      y_numpy = batch[1]
-      y = torch.from_numpy(batch[1]).to(device)
-      optim.zero_grad()
-      prob = mlp(x)
-      prob_num = prob.cpu().clone().detach().numpy()
-      predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
-      current_accuracy = accuracy(predictions, y_numpy)
-      accuracies_train.append(current_accuracy)
+    counter = counter + 1
+    batch = trainDataSet.next_batch(FLAGS.batch_size)
+    x = batch[0]
+    x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))).to(device)
+    y_numpy = batch[1]
+    y = torch.from_numpy(batch[1]).to(device)
+    optim.zero_grad()
+    prob = mlp(x)
+    prob_num = prob.cpu().clone().detach().numpy()
+    predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
+    current_accuracy = accuracy(predictions, y_numpy)
+    accuracies_train.append(current_accuracy)
 
-      current_loss = loss(prob,  torch.max(y, 1)[1])
-      current_loss.backward()
-      optim.step()
-      niter = aggregate_counter + counter
-      current_loss = current_loss.cpu().detach().numpy()
-      loss_train.append(current_loss)
-      writer.add_scalar('Train/Loss', current_loss, niter)
-      writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    current_loss = loss(prob,  torch.max(y, 1)[1])
+    current_loss.backward()
+    optim.step()
+    niter = aggregate_counter + counter
+    current_loss = current_loss.cpu().detach().numpy()
+    loss_train.append(current_loss)
+    writer.add_scalar('Train/Loss', current_loss, niter)
+    writer.add_scalar('Train/Accuracy', current_accuracy, niter)
     if i % FLAGS.eval_freq == 0:
-      test_dataset(mlp, testDataSet, loss, aggregate_counter, i)
+      test_dataset(mlp, testDataSet, loss, i)
     aggregate_counter += counter
-    writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
-    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
-    # test_dataset(mlp, testDataSet, loss, aggregate_counter)
     print(np.mean(accuracies_train))
+  test_dataset(mlp, testDataSet, loss, FLAGS.max_steps + 1)
 
-def test_dataset(mlp, testDataSet, loss, agg, i):
+
+def test_dataset(mlp, testDataSet, loss, i):
   accuracies_test = []
   loss_test = []
   with torch.no_grad():
@@ -139,9 +137,6 @@ def test_dataset(mlp, testDataSet, loss, agg, i):
       current_loss = loss(outputs, torch.max(y, 1)[1])
       current_loss = current_loss.cpu().detach().numpy()
       loss_test.append(current_loss)
-      niter = agg + counter
-      writer.add_scalar('Test/Loss', current_loss, niter)
-      writer.add_scalar('Test/Accuracy', current_accuracy, niter)
     writer.add_scalar('Test/LossIteration', np.mean(loss_test), i)
     writer.add_scalar('Test/AccuracyIteration', np.mean(accuracies_test), i)
 
