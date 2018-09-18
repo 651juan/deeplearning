@@ -79,7 +79,6 @@ def train():
     flag = trainDataSet.epochs_completed
     counter = 0
     while flag == trainDataSet.epochs_completed:
-      print(i)
       counter = counter + 1
       batch = trainDataSet.next_batch(FLAGS.batch_size)
       x = torch.from_numpy(batch[0]).to(device)
@@ -91,6 +90,7 @@ def train():
       prob_num = prob.cpu().clone().detach().numpy()
       predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
       current_accuracy = accuracy(predictions, y_numpy)
+      print(current_accuracy)
       accuracies_train.append(current_accuracy)
 
       current_loss = loss(prob, torch.max(y, 1)[1])
