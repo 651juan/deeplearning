@@ -61,7 +61,7 @@ def train():
   ### DO NOT CHANGE SEEDS!
   # Set the random seeds for reproducibility
   np.random.seed(42)
-
+  print(device)
   # Get Images
   cifar10 = cifar10_utils.read_data_sets(DATA_DIR_DEFAULT)
   # Create MLP Instance
@@ -79,6 +79,7 @@ def train():
     flag = trainDataSet.epochs_completed
     counter = 0
     while flag == trainDataSet.epochs_completed:
+      print(i)
       counter = counter + 1
       batch = trainDataSet.next_batch(FLAGS.batch_size)
       x = torch.from_numpy(batch[0]).to(device)
