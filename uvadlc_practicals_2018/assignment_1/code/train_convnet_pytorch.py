@@ -86,6 +86,7 @@ def train():
       # x = torch.from_numpy(x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])).to(device)
       y_numpy = batch[1]
       y = torch.from_numpy(batch[1]).cuda()
+      y.type(torch.LongTensor)
       optimizer.zero_grad()
       prob = mlp(x)
       prob_num = prob.cpu().clone().detach().data.numpy()
@@ -122,6 +123,7 @@ def test_dataset(mlp, testDataSet, loss, agg, i):
             # x = torch.from_numpy(x.reshape(x.shape[0], (x.shape[1] * x.shape[2] * x.shape[3]))).to(device)
             y_numpy = batch[1]
             y = torch.from_numpy(batch[1]).cuda()
+            y.type(torch.LongTensor)
             outputs = mlp(x)
             outputs_num = outputs.cpu().detach().data.numpy()
             predictions = (outputs_num == outputs_num.max(axis=1)[:, None]).astype(int)
