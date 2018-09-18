@@ -131,6 +131,7 @@ class SoftMaxModule(object):
     y = np.exp(x - b)
     out = y / y.sum(axis=0,keepdims=True)
     self.inter['probs'] = out
+    self.probs = out
     return out
 
   def backward(self, dout):
@@ -145,10 +146,24 @@ class SoftMaxModule(object):
     TODO:
     Implement backward pass of the module.
     """
-    probs = self.inter['probs'].reshape(-1, 1)
-    jacobian = np.diagflat(probs) - np.dot(probs, probs.T)
-    shape = np.shape(self.inter['probs'])
-    return dout.reshape(1,-1).dot(jacobian).reshape(shape[0], shape[1])
+    # probs = self.inter['probs'].reshape(-1, 1)
+    # jacobian = np.diagflat(probs) - np.dot(probs, probs.T)
+    # shape = np.shape(self.inter['probs'])
+    # return dout.reshape(1,-1).dot(jacobian).reshape(shape[0], shape[1])
+    dx = np.zeros(dout.shape)
+
+    #    jacobian_list = []
+    for n in range(dout.shape[1]):
+        jacobian_m = np.zeros((dout.shape[0], dout.shape[0]))
+        for i in range(len(jacobian_m)):
+            for j in range(len(jacobian_m)):
+                if i == j:
+                    jacobian_m[i][j] = self.probs[i][n] * (1 - self.probs[j][n])
+                else:
+                    jacobian_m[i][j] = -self.probs[i][n] * self.probs[j][n]
+                    #        jacobian_list.append(jacobian_m)
+        dx[:, n] = np.dot(jacobian_m, dout[:, n])
+    return dx
 class CrossEntropyModule(object):
   """
   Cross entropy loss module.

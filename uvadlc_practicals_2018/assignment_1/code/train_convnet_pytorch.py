@@ -78,34 +78,30 @@ def train():
     loss_train = []
     flag = trainDataSet.epochs_completed
     counter = 0
-    while flag == trainDataSet.epochs_completed:
-      counter = counter + 1
-      batch = trainDataSet.next_batch(FLAGS.batch_size)
-      x = torch.from_numpy(batch[0]).to(device)
-      # x = torch.from_numpy(x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])).to(device)
-      y_numpy = batch[1]
-      y = torch.from_numpy(batch[1]).to(device)
-      optimizer.zero_grad()
-      prob = mlp(x)
-      prob_num = prob.cpu().clone().detach().numpy()
-      predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
-      current_accuracy = accuracy(predictions, y_numpy)
-      print(current_accuracy)
-      accuracies_train.append(current_accuracy)
+    batch = trainDataSet.next_batch(FLAGS.batch_size)
+    x = torch.from_numpy(batch[0]).to(device)
+    # x = torch.from_numpy(x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])).to(device)
+    y_numpy = batch[1]
+    y = torch.from_numpy(batch[1]).to(device)
+    optimizer.zero_grad()
+    prob = mlp(x)
+    prob_num = prob.cpu().clone().detach().numpy()
+    predictions = (prob_num == prob_num.max(axis=1)[:, None]).astype(int)
+    current_accuracy = accuracy(predictions, y_numpy)
+    print(current_accuracy)
+    accuracies_train.append(current_accuracy)
 
-      current_loss = loss(prob, torch.max(y, 1)[1])
-      current_loss.backward()
-      optimizer.step()
-      niter = aggregate_counter + counter
-      current_loss = current_loss.cpu().detach().numpy()
-      loss_train.append(current_loss)
-      writer.add_scalar('Train/Loss', current_loss, niter)
-      writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    current_loss = loss(prob, torch.max(y, 1)[1])
+    current_loss.backward()
+    optimizer.step()
+    niter = aggregate_counter + counter
+    current_loss = current_loss.cpu().detach().numpy()
+    loss_train.append(current_loss)
+    writer.add_scalar('Train/Loss', current_loss, niter)
+    writer.add_scalar('Train/Accuracy', current_accuracy, niter)
     if i % FLAGS.eval_freq == 0:
         test_dataset(mlp, testDataSet, loss, aggregate_counter, i)
     aggregate_counter += counter
-    writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
-    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
     print("ITERATION FINISHED", i, " ", np.mean(accuracies_train))
 
 
