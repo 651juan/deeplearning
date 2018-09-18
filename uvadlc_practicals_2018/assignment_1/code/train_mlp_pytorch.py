@@ -14,14 +14,14 @@ import cifar10_utils
 import torch
 from tensorboardX import SummaryWriter
 
-writer = SummaryWriter('runs_pytorch')
+writer = SummaryWriter('runs_pytorch/new')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Default constants
-DNN_HIDDEN_UNITS_DEFAULT = '300,300,300'
-LEARNING_RATE_DEFAULT = 2e-3
-MAX_STEPS_DEFAULT = 1500
+DNN_HIDDEN_UNITS_DEFAULT = '300,600,600,300'
+LEARNING_RATE_DEFAULT = 2e-5
+MAX_STEPS_DEFAULT = 10000
 BATCH_SIZE_DEFAULT = 200
-EVAL_FREQ_DEFAULT = 100
+EVAL_FREQ_DEFAULT = 1000
 
 # Directory in which cifar data is saved
 DATA_DIR_DEFAULT = './cifar10/cifar-10-batches-py'
@@ -79,9 +79,8 @@ def train():
 
   mlp = MLP(size_of_images, dnn_hidden_units, np.shape(cifar10['test'].labels)[1]).to(device)
   loss = torch.nn.CrossEntropyLoss()
-  optim = torch.optim.SGD(mlp.parameters(), lr=FLAGS.learning_rate)
+  optim = torch.optim.Adam(mlp.parameters(), lr=FLAGS.learning_rate)
   aggregate_counter = 0
-
   for i in range(FLAGS.max_steps):
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []

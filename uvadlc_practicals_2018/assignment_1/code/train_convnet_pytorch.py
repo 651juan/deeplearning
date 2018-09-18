@@ -93,11 +93,10 @@ def train():
     current_loss = loss(prob, torch.max(y, 1)[1])
     current_loss.backward()
     optimizer.step()
-    niter = aggregate_counter + counter
     current_loss = current_loss.cpu().detach().numpy()
     loss_train.append(current_loss)
-    writer.add_scalar('Train/Loss', current_loss, niter)
-    writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    writer.add_scalar('Train/Loss', current_loss, i)
+    writer.add_scalar('Train/Accuracy', current_accuracy, i)
     if i % FLAGS.eval_freq == 0:
         test_dataset(mlp, testDataSet, loss, i)
     aggregate_counter += counter
