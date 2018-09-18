@@ -63,7 +63,7 @@ def train():
   np.random.seed(42)
   print(device)
   # Get Images
-  cifar10 = cifar10_utils.read_data_sets(DATA_DIR_DEFAULT)
+  cifar10 = cifar10_utils.read_data_sets(FLAGS.data_dir)
   # Create MLP Instance
   trainDataSet = cifar10['train']
   testDataSet = cifar10['test']
