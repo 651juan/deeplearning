@@ -17,7 +17,7 @@ from tensorboardX import SummaryWriter
 writer = SummaryWriter('runs_pytorch')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Default constants
-DNN_HIDDEN_UNITS_DEFAULT = '100'
+DNN_HIDDEN_UNITS_DEFAULT = '300,300,300'
 LEARNING_RATE_DEFAULT = 2e-3
 MAX_STEPS_DEFAULT = 1500
 BATCH_SIZE_DEFAULT = 200

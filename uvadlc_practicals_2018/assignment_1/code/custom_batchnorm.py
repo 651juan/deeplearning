@@ -35,8 +35,8 @@ class CustomBatchNormAutograd(nn.Module):
     super(CustomBatchNormAutograd, self).__init__()
     self.n_neurons = n_neurons
     self.eps = eps
-    self.beta = nn.Parameter(torch.ones(n_neurons))
-    self.gamma = nn.Parameter(torch.zeros(n_neurons))
+    self.beta = nn.Parameter(torch.zeros(n_neurons))
+    self.gamma = nn.Parameter(torch.ones(n_neurons))
 
   def forward(self, input):
     """
@@ -52,13 +52,15 @@ class CustomBatchNormAutograd(nn.Module):
       Implement batch normalization forward pass as given in the assignment.
       For the case that you make use of torch.var be aware that the flag unbiased=False should be set.
     """
+    for name, param in self.named_parameters():
+      print(name)
     if (input.size()[1] != self.n_neurons):
       raise ValueError("Dimensions mismatch")
 
     mu = torch.mean(input, 0)
-    theta = torch.mean((input - mu) ** 2, 0)
-    norm = (input - mu) * 1.0 / torch.sqrt(theta + self.eps)
-    out = (self.gamma * norm) + self.beta
+    theta = torch.var(torch.add(input,-mu),0, unbiased=False) #torch.mean((input - mu) ** 2, 0)
+    norm = torch.div((torch.add(input,-mu)), torch.sqrt(torch.add(theta,self.eps)))
+    out = torch.add(torch.mul(self.gamma, norm), self.beta)
     return out
 
 
@@ -104,14 +106,10 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
       for the backward pass. Do not store tensors which are unnecessary for the backward pass to save memory!
       For the case that you make use of torch.var be aware that the flag unbiased=False should be set.
     """
-
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    mu = torch.mean(input, 0)
+    theta = torch.var(torch.add(input,-mu),0, unbiased=False) #torch.mean((input - mu) ** 2, 0)
+    norm = torch.div((torch.add(input,-mu)), torch.sqrt(torch.add(theta,self.eps)))
+    out = torch.add(torch.mul(self.gamma, norm), self.beta)
 
     return out
 
@@ -133,13 +131,6 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
       inputs to None. This should be decided dynamically.
     """
 
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
 
     # return gradients of the three tensor inputs and None for the constant eps
     return grad_input, grad_gamma, grad_beta, None
