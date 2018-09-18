@@ -76,7 +76,6 @@ def train():
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []
     loss_train = []
-    flag = trainDataSet.epochs_completed
     counter = 0
     batch = trainDataSet.next_batch(FLAGS.batch_size)
     x = torch.from_numpy(batch[0]).to(device)

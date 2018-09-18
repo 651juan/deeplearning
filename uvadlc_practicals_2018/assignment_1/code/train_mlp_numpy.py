@@ -78,38 +78,33 @@ def train():
   size_of_images =  cifar10['train'].images[0].shape[0] * cifar10['train'].images[0].shape[1] * cifar10['train'].images[0].shape[2]
   mlp = MLP(size_of_images, dnn_hidden_units, np.shape(cifar10['test'].labels)[1])
   loss = CrossEntropyModule()
-  aggregate_counter = 0
   for i in range(FLAGS.max_steps):
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []
     loss_train = []
     flag = trainDataSet.epochs_completed
     counter = 0
-    while flag == trainDataSet.epochs_completed:
-      counter = counter + 1
-      batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
-      x = batch[0]
-      x = x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))
-      y = batch[1]
+    counter = counter + 1
+    batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
+    x = batch[0]
+    x = x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))
+    y = batch[1]
 
-      prob = mlp.forward(x)
-      predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
-      current_accuracy = accuracy(predictions, y)
-      accuracies_train.append(current_accuracy)
-      current_loss = loss.forward(prob, y)
-      loss_train.append(current_loss)
-      niter = aggregate_counter + counter
-      out_loss_back = loss.backward(prob,y)
-      mlp.backward(out_loss_back)
-      writer.add_scalar('Train/Loss', current_loss, niter)
-      writer.add_scalar('Train/Accuracy', current_accuracy, niter)
+    prob = mlp.forward(x)
+    predictions = (prob == prob.max(axis=1)[:, None]).astype(int)
+    current_accuracy = accuracy(predictions, y)
+    accuracies_train.append(current_accuracy)
+    current_loss = loss.forward(prob, y)
+    loss_train.append(current_loss)
+    out_loss_back = loss.backward(prob,y)
+    mlp.backward(out_loss_back)
     if i % FLAGS.eval_freq == 0:
-      test_dataset(mlp, testDataSet, loss, aggregate_counter, i)
-    aggregate_counter += counter
-    writer.add_scalar('Train/LossIteration', np.mean(loss_train), i)
-    writer.add_scalar('Train/AccuracyIteration', np.mean(accuracies_train), i)
-    print(np.mean(accuracies_train))
-    print(np.mean(loss_train))
+      test_dataset(mlp, testDataSet, loss, i)
+    writer.add_scalar('Train/LossIteration', current_accuracy, i)
+    writer.add_scalar('Train/AccuracyIteration', current_loss, i)
+    print(i)
+  test_dataset(mlp, testDataSet, loss, FLAGS.max_steps)
+
 
 def test_dataset(mlp, testDataSet, loss, i):
   accuracies_test = []
