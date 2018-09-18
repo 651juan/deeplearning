@@ -88,7 +88,6 @@ class ReLUModule(object):
     """
     self.inter['previousXPos'] = x > 0
     out = x * self.inter['previousXPos']
-
     return out
 
   def backward(self, dout):
@@ -126,12 +125,10 @@ class SoftMaxModule(object):
     
     Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.                                                           #
     """
-    self.inter['previousX'] = x
     b = x.max(axis=0,keepdims=True)
     y = np.exp(x - b)
     out = y / y.sum(axis=0,keepdims=True)
     self.inter['probs'] = out
-    self.probs = out
     return out
 
   def backward(self, dout):
@@ -150,20 +147,25 @@ class SoftMaxModule(object):
     # jacobian = np.diagflat(probs) - np.dot(probs, probs.T)
     # shape = np.shape(self.inter['probs'])
     # return dout.reshape(1,-1).dot(jacobian).reshape(shape[0], shape[1])
-    dx = np.zeros(dout.shape)
+    shape = dout.shape
+    out = np.zeros(shape)
+    probabilities = self.inter['probs']
+    for k in range(shape[1]):
+      jac = self.create_jacobian_matrix(k, probabilities, shape)
+      out[:, k] = jac.dot(dout[:,k])
+    return out
 
-    #    jacobian_list = []
-    for n in range(dout.shape[1]):
-        jacobian_m = np.zeros((dout.shape[0], dout.shape[0]))
-        for i in range(len(jacobian_m)):
-            for j in range(len(jacobian_m)):
-                if i == j:
-                    jacobian_m[i][j] = self.probs[i][n] * (1 - self.probs[j][n])
-                else:
-                    jacobian_m[i][j] = -self.probs[i][n] * self.probs[j][n]
-                    #        jacobian_list.append(jacobian_m)
-        dx[:, n] = np.dot(jacobian_m, dout[:, n])
-    return dx
+  def create_jacobian_matrix(self, k, probabilities, shape):
+    jac = np.zeros((shape[0], shape[0]))
+    for i in range(len(jac)):
+      for j in range(len(jac)):
+        if i == j:
+          jac[i][j] = probabilities[i][k] * (1 - probabilities[j][k])
+        else:
+          jac[i][j] = -probabilities[i][k] * probabilities[j][k]
+    return jac
+
+
 class CrossEntropyModule(object):
   """
   Cross entropy loss module.

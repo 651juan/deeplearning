@@ -71,20 +71,19 @@ def train():
     dnn_hidden_units = []
 
   # Get Images
-  cifar10 = cifar10_utils.read_data_sets(DATA_DIR_DEFAULT)
+  cifar10 = cifar10_utils.read_data_sets(FLAGS.data_dir)
   # Create MLP Instance
   trainDataSet = cifar10['train']
   testDataSet = cifar10['test']
+  #size of squeezed images
   size_of_images =  cifar10['train'].images[0].shape[0] * cifar10['train'].images[0].shape[1] * cifar10['train'].images[0].shape[2]
+  #MLP Object & loss
   mlp = MLP(size_of_images, dnn_hidden_units, np.shape(cifar10['test'].labels)[1])
   loss = CrossEntropyModule()
   for i in range(FLAGS.max_steps):
     # np.random.shuffle(cifar10['train'])
     accuracies_train = []
     loss_train = []
-    flag = trainDataSet.epochs_completed
-    counter = 0
-    counter = counter + 1
     batch = trainDataSet.next_batch(BATCH_SIZE_DEFAULT)
     x = batch[0]
     x = x.reshape(x.shape[0], (x.shape[1]*x.shape[2]*x.shape[3]))
@@ -103,7 +102,7 @@ def train():
     writer.add_scalar('Train/LossIteration', current_accuracy, i)
     writer.add_scalar('Train/AccuracyIteration', current_loss, i)
     print(i)
-  test_dataset(mlp, testDataSet, loss, FLAGS.max_steps)
+  test_dataset(mlp, testDataSet, loss, FLAGS.max_steps + 1)
 
 
 def test_dataset(mlp, testDataSet, loss, i):

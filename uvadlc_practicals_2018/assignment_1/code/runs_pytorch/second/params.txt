@@ -1,6 +1,0 @@
-dnn_hidden_units : 100
-learning_rate : 0.02
-max_steps : 1500
-batch_size : 200
-eval_freq : 100
-data_dir : ./cifar10/cifar-10-batches-py

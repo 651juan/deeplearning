@@ -106,16 +106,49 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
       for the backward pass. Do not store tensors which are unnecessary for the backward pass to save memory!
       For the case that you make use of torch.var be aware that the flag unbiased=False should be set.
     """
-    mu = torch.mean(input, 0)
-    theta = torch.var(torch.add(input,-mu),0, unbiased=False) #torch.mean((input - mu) ** 2, 0)
-    norm = torch.div((torch.add(input,-mu)), torch.sqrt(torch.add(theta,self.eps)))
-    out = torch.add(torch.mul(self.gamma, norm), self.beta)
+    N, D = input.shape
+
+    # step1: calculate mean
+    mu = 1. / N * torch.sum(input, 0)
+
+    # step2: subtract mean vector of every trainings example
+    xmu = input - mu
+
+    # step3: following the lower branch - calculation denominator
+    sq = xmu ** 2
+
+    # step4: calculate variance
+    var = 1. / N * torch.sum(sq, 0)
+
+    # step5: add eps for numerical stability, then sqrt
+    sqrtvar = np.sqrt(var + eps)
+
+    # step6: invert sqrtwar
+    ivar = 1. / sqrtvar
+
+    # step7: execute normalization
+    xhat = xmu * ivar
+
+    # step8: Nor the two transformation steps
+    gammax = gamma * xhat
+
+    # step9
+    out = gammax + beta
+
+    # store intermediate
+    ctx.xhat = xhat
+    ctx.gamma = gamma
+    ctx.xmu = xmu
+    ctx.ivar = ivar
+    ctx.sqrtvar = sqrtvar
+    ctx.var = var
+    ctx.eps = eps
 
     return out
 
 
   @staticmethod
-  def backward(ctx, grad_output):
+  def backward(ctx, dout):
     """
     Compute backward pass of the batch normalization.
     
@@ -131,9 +164,44 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
       inputs to None. This should be decided dynamically.
     """
 
+    N, D = dout.shape
+
+    # step9
+    dbeta = torch.sum(dout, 0)
+    dgammax = dout  # not necessary, but more understandable
+
+    # step8
+    dgamma = torch.sum(dgammax * ctx.xhat,0)
+    dxhat = dgammax * ctx.gamma
+
+    # step7
+    divar = torch.sum(dxhat * ctx.xmu, 0)
+    dxmu1 = dxhat * ctx.ivar
+
+    # step6
+    dsqrtvar = -1. / (ctx.sqrtvar ** 2) * divar
+
+    # step5
+    dvar = 0.5 * 1. / np.sqrt(ctx.var + ctx.eps) * dsqrtvar
+
+    # step4
+    dsq = 1. / N * np.ones((N, D)) * dvar
+
+    # step3
+    dxmu2 = 2 * ctx.xmu * dsq
+
+    # step2
+    dx1 = (dxmu1 + dxmu2)
+    dmu = -1 * torch.sum(dxmu1 + dxmu2, 0)
+
+    # step1
+    dx2 = 1. / N * np.ones((N, D)) * dmu
+
+    # step0
+    dx = dx1 + dx2
 
     # return gradients of the three tensor inputs and None for the constant eps
-    return grad_input, grad_gamma, grad_beta, None
+    return dx, dgamma, dbeta, None
 
 
 
@@ -161,14 +229,10 @@ class CustomBatchNormManualModule(nn.Module):
       Initialize parameters gamma and beta via nn.Parameter
     """
     super(CustomBatchNormManualModule, self).__init__()
-
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    self.n_neurons = n_neurons
+    self.eps = eps
+    self.beta = nn.Parameter(torch.zeros(n_neurons))
+    self.gamma = nn.Parameter(torch.ones(n_neurons))
 
   def forward(self, input):
     """
@@ -184,13 +248,9 @@ class CustomBatchNormManualModule(nn.Module):
       Instantiate a CustomBatchNormManualFunction.
       Call it via its .apply() method.
     """
-
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    if (input.size()[1] != self.n_neurons):
+      raise ValueError("Dimensions mismatch")
+    customBatch = CustomBatchNormManualFunction()
+    out = customBatch.apply(input, self.gamma, self.beta)
 
     return out
