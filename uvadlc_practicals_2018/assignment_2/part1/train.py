@@ -72,8 +72,7 @@ def train(config):
 
         loss = criterion.forward(prob, batch_targets)
         optimizer.step()
-        predictions = (prob == prob.max(dim=1)[:, None]).astype(int)
-        accuracy = np.sum(np.all((predictions == batch_targets), axis=1)) / predictions.shape[0]
+        accuracy = float(torch.sum(prob.argmax(dim=1)==batch_targets))/config.batch_size
 
         # Just for time measurement
         t2 = time.time()

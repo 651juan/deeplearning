@@ -31,11 +31,13 @@ class VanillaRNN(nn.Module):
     def __init__(self, seq_length, input_dim, num_hidden, num_classes, batch_size, device='cpu'):
         super(VanillaRNN, self).__init__()
         # np.random.normal(0, 0.0001, size),
-        self.Whx = torch.nn.Parameter(torch.zeros(batch_size, num_hidden))
-        self.Whh = torch.nn.Parameter(torch.zeros(num_hidden, num_hidden))
-        self.Wph = torch.nn.Parameter(torch.zeros(batch_size, num_hidden))
+        self.Whx = torch.nn.Parameter(torch.randn(batch_size, num_hidden))
+        self.Whh = torch.nn.Parameter(torch.randn(num_hidden, num_hidden))
+        self.Wph = torch.nn.Parameter(torch.randn(batch_size, num_hidden))
+
         self.bh = torch.nn.Parameter(torch.zeros(seq_length))
         self.bp = torch.nn.Parameter(torch.zeros(seq_length))
+
         self.device = device
         self.h = []
         self.h.append(torch.zeros(batch_size, seq_length))
@@ -45,7 +47,8 @@ class VanillaRNN(nn.Module):
         self.p = []
         for x in range(seq_length):
             self.p.append(torch.zeros(batch_size, input_dim))
-        self.softmax = Softmax()
+        self.softmax = Softmax(dim=1)
+
     def forward(self, x):
         for i in range(self.seq_length):
             self.h[i+1] = torch.tanh(torch.mm(self.Whx, x) + torch.mm(self.Whh, self.h[i]) + self.bh)
