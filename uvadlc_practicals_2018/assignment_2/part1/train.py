@@ -24,7 +24,6 @@ from datetime import datetime
 import numpy as np
 
 import torch
-from torch.legacy.nn import SoftMax
 from torch.nn import CrossEntropyLoss
 from torch.optim import RMSprop
 from torch.utils.data import DataLoader
@@ -49,14 +48,14 @@ def train(config):
     if config.model_type == 'RNN':
         model = VanillaRNN(config.input_length, config.input_dim, config.num_hidden, config.num_classes, config.batch_size, device)
     else:
-        model = LSTM(config.seq_length, config.input_dim, config.num_hidden, config.num_classes, config.batch_size, device)
+        model = LSTM(config.input_length, config.input_dim, config.num_hidden, config.num_classes, config.batch_size, device=device)
     # Initialize the dataset and data loader (note the +1)
     dataset = PalindromeDataset(config.input_length+1)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
 
     # Setup the loss and optimizer
     criterion = CrossEntropyLoss()
-    optimizer = RMSprop(model.parameters())
+    optimizer = RMSprop(model.parameters(), lr=config.learning_rate)
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
@@ -71,9 +70,9 @@ def train(config):
         ############################################################################
 
         loss = criterion.forward(prob, batch_targets)
-        optimizer.step()
         accuracy = float(torch.sum(prob.argmax(dim=1)==batch_targets))/config.batch_size
-
+        loss.backward()
+        optimizer.step()
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)

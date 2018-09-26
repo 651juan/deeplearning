@@ -17,49 +17,49 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import argparse
 import time
 from datetime import datetime
-import argparse
-
-import numpy as np
 
 import torch
-import torch.optim as optim
+from torch.nn import CrossEntropyLoss
+from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 
 from part3.dataset import TextDataset
 from part3.model import TextGenerationModel
+
 
 ################################################################################
 
 def train(config):
 
     # Initialize the device which to run the model on
-    device = torch.device(config.device)
-
-    # Initialize the model that we are going to use
-    model = TextGenerationModel( ... )  # fixme
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Initialize the dataset and data loader (note the +1)
-    dataset = TextDataset( ... )  # fixme
+    dataset = TextDataset(config.txt_file, config.seq_length)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
+    model = TextGenerationModel(config.batch_size, config.seq_length, dataset.vocab_size , lstm_num_hidden=config.lstm_num_hidden, lstm_num_layers=config.lstm_num_layers, device=device)
 
     # Setup the loss and optimizer
-    criterion = None  # fixme
-    optimizer = None  # fixme
+    criterion = CrossEntropyLoss()
+    optimizer = RMSprop(model.parameters())
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
         # Only for time measurement of step through network
         t1 = time.time()
-
-        #######################################################
-        # Add more code here ...
-        #######################################################
-
-        loss = np.inf   # fixme
-        accuracy = 0.0  # fixme
+        probs =  model.forward(batch_inputs)
+        loss = 0.00
+        accuracy = 0.0
+        for prob in probs:
+            loss += criterion.forward(prob, batch_targets)
+            accuracy += float(torch.sum(prob.argmax(dim=1)==batch_targets))/config.batch_size
+        accuracy /= len(probs)
+        loss /= len(probs)
+        loss.backward()
+        optimizer.step()
 
         # Just for time measurement
         t2 = time.time()

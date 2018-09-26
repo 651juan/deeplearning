@@ -30,27 +30,26 @@ class VanillaRNN(nn.Module):
 
     def __init__(self, seq_length, input_dim, num_hidden, num_classes, batch_size, device='cpu'):
         super(VanillaRNN, self).__init__()
-        # np.random.normal(0, 0.0001, size),
-        self.Whx = torch.nn.Parameter(torch.randn(batch_size, num_hidden))
-        self.Whh = torch.nn.Parameter(torch.randn(num_hidden, num_hidden))
-        self.Wph = torch.nn.Parameter(torch.randn(batch_size, num_hidden))
+        gaussian = torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([0.1]))
 
-        self.bh = torch.nn.Parameter(torch.zeros(seq_length))
-        self.bp = torch.nn.Parameter(torch.zeros(seq_length))
+        self.Whx = torch.nn.Parameter(torch.randn(input_dim, num_hidden))
+        self.Whh = torch.nn.Parameter(torch.randn(num_hidden, num_hidden))
+        self.Wph = torch.nn.Parameter(torch.randn(batch_size, num_classes))
+
+        self.bh = torch.nn.Parameter(torch.zeros(num_hidden))
+        self.bp = torch.nn.Parameter(torch.zeros(num_classes))
 
         self.device = device
-        self.h = []
-        self.h.append(torch.zeros(batch_size, seq_length))
         self.seq_length = seq_length
-        for x in range(seq_length+1):
-            self.h.append(torch.zeros(batch_size, num_hidden))
-        self.p = []
-        for x in range(seq_length):
-            self.p.append(torch.zeros(batch_size, input_dim))
+        self.batch_size = batch_size
+        self.num_hidden = num_hidden
         self.softmax = Softmax(dim=1)
 
     def forward(self, x):
+        h = torch.zeros(self.batch_size, self.num_hidden)
         for i in range(self.seq_length):
-            self.h[i+1] = torch.tanh(torch.mm(self.Whx, x) + torch.mm(self.Whh, self.h[i]) + self.bh)
-            self.p[i] = torch.mm(self.Wph, self.h[i+1]) + self.bp
-        return self.softmax.forward(self.p[-1])
+            x_i = x[:, i].reshape(-1,1)
+            h_t = torch.tanh(torch.mm(self.Whx, x_i) + torch.mm(self.Whh, h) + self.bh)
+            h = h_t
+            p = torch.mm(h_t, self.Wph) + self.bp
+        return self.softmax(p)
