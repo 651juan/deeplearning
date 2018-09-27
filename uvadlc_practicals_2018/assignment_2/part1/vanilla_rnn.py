@@ -36,8 +36,8 @@ class VanillaRNN(nn.Module):
         self.Whh = torch.nn.Parameter(torch.randn(num_hidden, num_hidden))
         self.Wph = torch.nn.Parameter(torch.randn(batch_size, num_classes))
 
-        self.bh = torch.nn.Parameter(torch.zeros(num_hidden))
-        self.bp = torch.nn.Parameter(torch.zeros(num_classes))
+        self.bh = torch.nn.Parameter(torch.ones([num_hidden,1]))
+        self.bp = torch.nn.Parameter(torch.ones([num_classes,1]))
 
         self.device = device
         self.seq_length = seq_length
@@ -46,10 +46,10 @@ class VanillaRNN(nn.Module):
         self.softmax = Softmax(dim=1)
 
     def forward(self, x):
-        h = torch.zeros(self.batch_size, self.num_hidden)
+        h = torch.zeros(self.num_hidden, self.batch_size)
         for i in range(self.seq_length):
-            x_i = x[:, i].reshape(-1,1)
+            x_i = x[:, i].reshape(1,-1)
             h_t = torch.tanh(torch.mm(self.Whx, x_i) + torch.mm(self.Whh, h) + self.bh)
             h = h_t
-            p = torch.mm(h_t, self.Wph) + self.bp
-        return self.softmax(p)
+            p = torch.mm(self.Wph,h_t) + self.bp
+        return torch.t(self.softmax(p))
