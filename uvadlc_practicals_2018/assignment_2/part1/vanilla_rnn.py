@@ -32,9 +32,9 @@ class VanillaRNN(nn.Module):
         super(VanillaRNN, self).__init__()
         gaussian = torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([0.1]))
 
-        self.Whx = torch.nn.Parameter(torch.randn(input_dim, num_hidden))
-        self.Whh = torch.nn.Parameter(torch.randn(num_hidden, num_hidden))
-        self.Wph = torch.nn.Parameter(torch.randn(batch_size, num_classes))
+        self.Whx = torch.nn.Parameter(torch.squeeze(gaussian.sample((num_hidden, input_dim)),2))
+        self.Whh = torch.nn.Parameter(torch.squeeze(gaussian.sample((num_hidden, num_hidden)),2))
+        self.Wph = torch.nn.Parameter(torch.squeeze(gaussian.sample((num_classes, num_hidden)),2))
 
         self.bh = torch.nn.Parameter(torch.ones([num_hidden,1]))
         self.bp = torch.nn.Parameter(torch.ones([num_classes,1]))
