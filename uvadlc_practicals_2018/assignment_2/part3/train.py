@@ -44,7 +44,7 @@ def train(config):
 
     # Setup the loss and optimizer
     criterion = CrossEntropyLoss()
-    optimizer = RMSprop(model.parameters())
+    optimizer = RMSprop(model.parameters(), lr=config.learning_rate)
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         t1 = time.time()
@@ -60,7 +60,8 @@ def train(config):
         for prob, target in zip(probs, batch_targets):
             # prediction = torch.argmax(prob, dim=1).float()
             loss += criterion.forward(prob, target)
-            accuracy += float(torch.sum(prob.argmax(dim=1).float() == target.float()))/config.batch_size
+            predictions = prob.argmax(dim=1).float()
+            accuracy += float(torch.sum(predictions == target.float())) / config.batch_size
         loss = loss / config.seq_length
         loss.backward()
         optimizer.step()
@@ -79,8 +80,12 @@ def train(config):
                 accuracy, loss
             ))
 
-        if step == config.sample_every:
+        if step % config.sample_every == 0:
             # Generate some sentences by sampling from the model
+            prediction_idx = torch.t(torch.stack([prob.argmax(dim=1) for prob in probs]))
+            for b in prediction_idx:
+                print("Sentence: ", dataset.convert_to_string(b.numpy()))
+
             pass
 
         if step == config.train_steps:
