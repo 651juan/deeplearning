@@ -88,7 +88,7 @@ def train(config):
             prediction_idx = torch.t(torch.stack([prob.argmax(dim=1) for prob in probs]))
             for b in prediction_idx:
                 print("Sentence: ", dataset.convert_to_string(b.numpy()))
-                writer.add_text(dataset.convert_to_string(b.numpy()))
+                writer.add_text('out', dataset.convert_to_string(b.numpy()))
             pass
 
         if step == config.train_steps:
