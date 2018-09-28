@@ -47,19 +47,24 @@ def train(config):
     optimizer = RMSprop(model.parameters())
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
-
-        # Only for time measurement of step through network
         t1 = time.time()
-        probs =  model.forward(batch_inputs)
-        loss = 0.00
-        accuracy = 0.0
-        for prob in probs:
-            loss += criterion.forward(prob, batch_targets)
-            accuracy += float(torch.sum(prob.argmax(dim=1)==batch_targets))/config.batch_size
-        accuracy /= len(probs)
-        loss /= len(probs)
+
+        batch_targets = torch.stack(batch_targets)
+        batch_targets.to(device)
+        optimizer.zero_grad()
+
+        probs = model.forward(batch_inputs)
+
+        loss = 0
+        accuracy = 0
+        for prob, target in zip(probs, batch_targets):
+            # prediction = torch.argmax(prob, dim=1).float()
+            loss += criterion.forward(prob, target)
+            accuracy += float(torch.sum(prob.argmax(dim=1).float() == target.float()))/config.batch_size
+        loss = loss / config.seq_length
         loss.backward()
         optimizer.step()
+        accuracy = accuracy/ config.seq_length
 
         # Just for time measurement
         t2 = time.time()
@@ -67,11 +72,11 @@ def train(config):
 
         if step % config.print_every == 0:
 
-            print("[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
+            print("[{}] Train Step {:04d}/{:04f}, Batch Size = {}, Examples/Sec = {:.2f}, "
                   "Accuracy = {:.2f}, Loss = {:.3f}".format(
-                    datetime.now().strftime("%Y-%m-%d %H:%M"), step,
-                    config.train_steps, config.batch_size, examples_per_second,
-                    accuracy, loss
+                datetime.now().strftime("%Y-%m-%d %H:%M"), step,
+                config.train_steps, config.batch_size, examples_per_second,
+                accuracy, loss
             ))
 
         if step == config.sample_every:
