@@ -28,9 +28,10 @@ from torch.utils.data import DataLoader
 
 from part3.dataset import TextDataset
 from part3.model import TextGenerationModel
-
+from tensorboardX import SummaryWriter
 
 ################################################################################
+writer = SummaryWriter('runs_lstm_gen')
 
 def train(config):
 
@@ -64,6 +65,8 @@ def train(config):
             accuracy += float(torch.sum(predictions == target.float())) / config.batch_size
         loss = loss / config.seq_length
         loss.backward()
+        writer.add_scalar('Train/Loss',  loss, step)
+        writer.add_scalar('Train/Accuracy', accuracy, step)
         optimizer.step()
         accuracy = accuracy/ config.seq_length
 
@@ -85,7 +88,7 @@ def train(config):
             prediction_idx = torch.t(torch.stack([prob.argmax(dim=1) for prob in probs]))
             for b in prediction_idx:
                 print("Sentence: ", dataset.convert_to_string(b.numpy()))
-
+                writer.add_text(dataset.convert_to_string(b.numpy()))
             pass
 
         if step == config.train_steps:
