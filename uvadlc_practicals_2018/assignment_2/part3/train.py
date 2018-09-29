@@ -26,8 +26,8 @@ from torch.nn import CrossEntropyLoss
 from torch.optim import RMSprop
 from torch.utils.data import DataLoader
 
-from part3.dataset import TextDataset
-from part3.model import TextGenerationModel
+from dataset import TextDataset
+from model import TextGenerationModel
 from tensorboardX import SummaryWriter
 
 ################################################################################
