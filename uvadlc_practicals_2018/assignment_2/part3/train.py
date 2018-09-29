@@ -53,7 +53,9 @@ def train(config):
         batch_targets = torch.stack(batch_targets)
         batch_targets.to(device)
         optimizer.zero_grad()
-
+        print(len(batch_inputs), len(batch_inputs[0]))
+        if (len(batch_inputs[0][0]) <64):
+            continue
         probs = model.forward(batch_inputs)
 
         loss = 0
@@ -128,7 +130,7 @@ if __name__ == "__main__":
     # Misc params
     parser.add_argument('--summary_path', type=str, default="./summaries/", help='Output path for summaries')
     parser.add_argument('--print_every', type=int, default=5, help='How often to print training progress')
-    parser.add_argument('--sample_every', type=int, default=100, help='How often to sample from the model')
+    parser.add_argument('--sample_every', type=int, default=1000, help='How often to sample from the model')
 
     config = parser.parse_args()
 

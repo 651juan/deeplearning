@@ -46,4 +46,5 @@ class TextGenerationModel(nn.Module):
         x = x.float()
         probs = self.LSTM(x)
         probs = self.fc(probs[0])
-        return self.softmax(probs)
+        # return self.softmax(probs)
+        return probs
