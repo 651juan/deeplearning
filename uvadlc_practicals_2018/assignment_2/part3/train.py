@@ -54,7 +54,7 @@ def train(config):
         batch_targets.to(device)
         optimizer.zero_grad()
         print(len(batch_inputs), len(batch_inputs[0]))
-        if (len(batch_inputs[0][0]) <64):
+        if (len(batch_inputs[0]) <64):
             continue
         probs = model.forward(batch_inputs)
 
