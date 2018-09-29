@@ -43,8 +43,6 @@ class TextGenerationModel(nn.Module):
             x_onehot.scatter_(1, x_t.reshape(-1,1), 1)
             list.append(x_onehot)
         x = torch.stack(list)
-        # tensor = torch.unsqueeze(tensor,2).float()
-        # x.to(self.device)
         x = x.float()
         probs = self.LSTM(x)
         probs = self.fc(probs[0])

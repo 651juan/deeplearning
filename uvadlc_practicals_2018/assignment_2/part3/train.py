@@ -66,7 +66,7 @@ def train(config):
         loss = loss / config.seq_length
         loss.backward()
         writer.add_scalar('Train/Loss',  loss, step)
-        writer.add_scalar('Train/Accuracy', accuracy, step)
+        writer.add_scalar('Train/Accurac3y', accuracy, step)
         optimizer.step()
         accuracy = accuracy/ config.seq_length
 
