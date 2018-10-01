@@ -34,7 +34,7 @@ class TextGenerationModel(nn.Module):
         self.lstm_num_hidden = lstm_num_hidden
         self.seq_length = seq_length
         self.vocabulary_size = vocabulary_size
-        self.hidden = self.init_hidden()
+        self.hidden = self.init_hidden(self.batch_size)
 
     def forward(self, x):
         x = torch.stack(x)
@@ -48,12 +48,31 @@ class TextGenerationModel(nn.Module):
         x = x.float()
         probs = self.LSTM(x, self.hidden)
         probs = self.fc(probs[0])
-        return probs
+        return probs / 0.5
 
-    def init_hidden(self):
+    def init_hidden(self, batch):
         # Before we've done anything, we dont have any hidden state.
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(2, self.batch_size, self.lstm_num_hidden),
-                torch.zeros(2, self.batch_size, self.lstm_num_hidden))
+        return (torch.zeros(2, batch, self.lstm_num_hidden),
+                torch.zeros(2, batch, self.lstm_num_hidden))
+
+    def generate_text(self, x, size):
+        self.batch_size = 1
+        text = torch.zeros(size)
+        text[0] = x.argmax()
+        (h,c) = self.init_hidden(1)
+        y = 0
+        for i in range(size-1):
+            x_onehot = torch.FloatTensor(1, self.vocabulary_size)
+            x_onehot.zero_()
+            x_onehot.scatter_(1, x.reshape(-1, 1), 1)
+            x = x_onehot.view(1, 1, self.vocabulary_size)
+
+            probs, (h,c) = self.LSTM(x, (h, c))
+            probs = self.fc(probs)
+            y = probs.argmax()
+            text[i+1] = y
+            x = y
+        return text

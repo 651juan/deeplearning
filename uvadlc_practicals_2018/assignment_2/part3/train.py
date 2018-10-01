@@ -31,7 +31,7 @@ from model import TextGenerationModel
 from tensorboardX import SummaryWriter
 
 ################################################################################
-writer = SummaryWriter('runs_lstm_gen')
+writer = SummaryWriter('runs_lstm_gen_2')
 
 def train(config):
 
@@ -91,13 +91,9 @@ def train(config):
                     accuracy, loss
                 ))
 
-            if step % config.sample_every == 0:
+            # if step % config.sample_every == 0:
                 # Generate some sentences by sampling from the model
-                prediction_idx = torch.t(torch.stack([prob.argmax(dim=1) for prob in probs]))
-                for b in prediction_idx:
-                    print("Sentence: ", dataset.convert_to_string(b.numpy()))
-                    writer.add_text('out', dataset.convert_to_string(b.numpy()))
-                pass
+                # greedy_sampling_model(model, dataset)
             if realsteps > config.train_steps:
                 break
 
@@ -111,6 +107,20 @@ def train(config):
 
  ################################################################################
  ################################################################################
+def greedy_sampling(config, path):
+    dataset = TextDataset(config.txt_file, config.seq_length)
+    model = torch.load('./'+path)
+    # model.batch_size = 1
+    input = torch.round(torch.rand(1) *dataset.vocab_size)
+    text = model.generate_text(input.long(), 30)
+    print(dataset.convert_to_string(text.numpy()))
+
+def greedy_sampling_model(model, dataset):
+    # model.batch_size = 1
+    input = torch.round(torch.rand(1) * dataset.vocab_size)
+    text = model.generate_text(input.long(), 30)
+    print(dataset.convert_to_string(text.numpy()))
+
 
 if __name__ == "__main__":
 
@@ -143,4 +153,5 @@ if __name__ == "__main__":
     config = parser.parse_args()
 
     # Train the model
-    train(config)
+    # train(config)
+    greedy_sampling(config, './TEMPERATURE1/30000')

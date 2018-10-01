@@ -32,7 +32,7 @@ from part1.dataset import PalindromeDataset
 from part1.vanilla_rnn import VanillaRNN
 from part1.lstm import LSTM
 from tensorboardX import SummaryWriter
-writer = SummaryWriter('runs_vanilla')
+writer = SummaryWriter('runs_lstm_10')
 
 
 ################################################################################
@@ -63,7 +63,7 @@ def train(config):
 
         prob =  model.forward(batch_inputs)
         ############################################################################
-        # QUESTION: what happens here and why?
+        # QUESTION: what happens here and why? Done to avoid vanishing gradients
         ############################################################################
         torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=config.max_norm)
         ############################################################################
@@ -75,7 +75,7 @@ def train(config):
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
-        writer.add_scalar('Train/Accuracy', accuracy, config.input_length)
+        writer.add_scalar('Train/Accuracy', accuracy, step)
 
         if step % 10 == 0:
 
@@ -103,12 +103,12 @@ if __name__ == "__main__":
 
     # Model params
     parser.add_argument('--model_type', type=str, default="LSTM", help="Model type, should be 'RNN' or 'LSTM'")
-    parser.add_argument('--input_length', type=int, default=10, help='Length of an input sequence')
+    parser.add_argument('--input_length', type=int, default=35, help='Length of an input sequence')
     parser.add_argument('--input_dim', type=int, default=1, help='Dimensionality of input sequence')
     parser.add_argument('--num_classes', type=int, default=10, help='Dimensionality of output sequence')
     parser.add_argument('--num_hidden', type=int, default=128, help='Number of hidden units in the model')
     parser.add_argument('--batch_size', type=int, default=128, help='Number of examples to process in a batch')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--learning_rate', type=float, default=0.01, help='Learning rate')
     parser.add_argument('--train_steps', type=int, default=10000, help='Number of training steps')
     parser.add_argument('--max_norm', type=float, default=10.0)
     parser.add_argument('--device', type=str, default="cuda:0", help="Training device 'cpu' or 'cuda:0'")
