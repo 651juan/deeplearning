@@ -75,6 +75,7 @@ def train(config):
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
+        writer.add_scalar('Train/Accuracy', accuracy, config.input_length)
 
         if step % 10 == 0:
 
@@ -89,7 +90,6 @@ def train(config):
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
             break
-    writer.add_scalar('Train/Accuracy', accuracy, config.input_length)
     print('Done training.')
 
 
