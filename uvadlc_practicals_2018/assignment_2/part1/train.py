@@ -31,9 +31,9 @@ from torch.utils.data import DataLoader
 from part1.dataset import PalindromeDataset
 from part1.vanilla_rnn import VanillaRNN
 from part1.lstm import LSTM
-
-# You may want to look into tensorboardX for logging
 from tensorboardX import SummaryWriter
+writer = SummaryWriter('runs_vanilla')
+
 
 ################################################################################
 
@@ -89,7 +89,7 @@ def train(config):
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
             break
-
+    writer.add_scalar('Train/Accuracy', accuracy, config.input_length)
     print('Done training.')
 
 
