@@ -47,53 +47,61 @@ def train(config):
     criterion = CrossEntropyLoss()
     optimizer = RMSprop(model.parameters(), lr=config.learning_rate)
 
-    for step, (batch_inputs, batch_targets) in enumerate(data_loader):
-        t1 = time.time()
+    realsteps = 0
+    for epoch in range(1000):
+        for step, (batch_inputs, batch_targets) in enumerate(data_loader):
+            realsteps += 1
+            step = realsteps
+            t1 = time.time()
 
-        batch_targets = torch.stack(batch_targets)
-        batch_targets.to(device)
-        optimizer.zero_grad()
-        print(len(batch_inputs), len(batch_inputs[0]))
-        if (len(batch_inputs[0]) <64):
-            continue
-        probs = model.forward(batch_inputs)
+            batch_targets = torch.stack(batch_targets)
+            batch_targets.to(device)
+            optimizer.zero_grad()
+            print(len(batch_inputs), len(batch_inputs[0]))
+            if (len(batch_inputs[0]) <64):
+                continue
+            probs = model.forward(batch_inputs)
 
-        loss = 0
-        accuracy = 0
-        for prob, target in zip(probs, batch_targets):
-            # prediction = torch.argmax(prob, dim=1).float()
-            loss += criterion.forward(prob, target)
-            predictions = prob.argmax(dim=1).float()
-            accuracy += float(torch.sum(predictions == target.float())) / config.batch_size
-        loss = loss / config.seq_length
-        loss.backward()
-        writer.add_scalar('Train/Loss',  loss, step)
-        writer.add_scalar('Train/Accurac3y', accuracy, step)
-        optimizer.step()
-        accuracy = accuracy/ config.seq_length
+            loss = 0
+            accuracy = 0
+            for prob, target in zip(probs, batch_targets):
+                # prediction = torch.argmax(prob, dim=1).float()
+                loss += criterion.forward(prob, target)
+                predictions = prob.argmax(dim=1).float()
+                accuracy += float(torch.sum(predictions == target.float())) / config.batch_size
+            loss = loss / config.seq_length
+            loss.backward()
+            writer.add_scalar('Train/Loss',  loss, realsteps)
+            writer.add_scalar('Train/Accurac3y', accuracy, realsteps)
+            optimizer.step()
+            accuracy = accuracy/ config.seq_length
 
-        # Just for time measurement
-        t2 = time.time()
-        examples_per_second = config.batch_size/float(t2-t1)
+            # Just for time measurement
+            t2 = time.time()
+            examples_per_second = config.batch_size/float(t2-t1)
 
-        if step % config.print_every == 0:
+            if step % 10000 == 0:
+                torch.save(model, './'+str(step))
+            if step % config.print_every == 0:
 
-            print("[{}] Train Step {:04d}/{:04f}, Batch Size = {}, Examples/Sec = {:.2f}, "
-                  "Accuracy = {:.2f}, Loss = {:.3f}".format(
-                datetime.now().strftime("%Y-%m-%d %H:%M"), step,
-                config.train_steps, config.batch_size, examples_per_second,
-                accuracy, loss
-            ))
+                print("[{}] Train Step {:04d}/{:04f}, Batch Size = {}, Examples/Sec = {:.2f}, "
+                      "Accuracy = {:.2f}, Loss = {:.3f}".format(
+                    datetime.now().strftime("%Y-%m-%d %H:%M"), step,
+                    config.train_steps, config.batch_size, examples_per_second,
+                    accuracy, loss
+                ))
 
-        if step % config.sample_every == 0:
-            # Generate some sentences by sampling from the model
-            prediction_idx = torch.t(torch.stack([prob.argmax(dim=1) for prob in probs]))
-            for b in prediction_idx:
-                print("Sentence: ", dataset.convert_to_string(b.numpy()))
-                writer.add_text('out', dataset.convert_to_string(b.numpy()))
-            pass
+            if step % config.sample_every == 0:
+                # Generate some sentences by sampling from the model
+                prediction_idx = torch.t(torch.stack([prob.argmax(dim=1) for prob in probs]))
+                for b in prediction_idx:
+                    print("Sentence: ", dataset.convert_to_string(b.numpy()))
+                    writer.add_text('out', dataset.convert_to_string(b.numpy()))
+                pass
+            if realsteps > config.train_steps:
+                break
 
-        if step == config.train_steps:
+        if realsteps > config.train_steps:
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
             break

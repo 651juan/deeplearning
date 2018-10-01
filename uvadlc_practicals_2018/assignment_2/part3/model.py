@@ -35,7 +35,7 @@ class TextGenerationModel(nn.Module):
         self.seq_length = seq_length
         self.vocabulary_size = vocabulary_size
     def forward(self, x):
-        # x = torch.stack(x).to(self.device)
+        x = torch.stack(x)
         list = []
         for i, x_t in enumerate(x):
             x_onehot = torch.FloatTensor(self.batch_size, self.vocabulary_size)
